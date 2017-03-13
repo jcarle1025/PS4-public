@@ -4,17 +4,23 @@
 // until window.onload() is fired, since Sandelin's script
 // is already at the bottom of the body. this is functionally equivalent
 var data = (localStorage.getItem('todoList')) ?
-	    JSON.parse(localStorage.getItem('todoList')) :
-	    { todo: [], completed: [] };
+	JSON.parse(localStorage.getItem('todoList')) :
+	{ todo: [], completed: [] };
 
 // listening for new items (event -> update (addItem) -> render)
 document.getElementById('add').addEventListener('click', function() {
-  var value = document.getElementById('item').value;
-  if (value) addItem(value);
+	var value = document.getElementById('item').value;
+	if (value) {
+		addItem(value);
+		render();
+	}
 });
 document.getElementById('item').addEventListener('keydown', function (e) {
-  var value = this.value;
-  if (e.keyCode === 13 && value) addItem(value);
+	var value = this.value;
+	if (e.keyCode === 13 && value) {
+		addItem(value);
+		render();
+	}
 });
 
 // Remove and complete icons in SVG format
@@ -23,7 +29,7 @@ var completeSVG = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:x
 
 // only put it all in local storage when it needs to be put there
 window.addEventListener("beforeunload", function() {
-  localStorage.setItem('todoList', JSON.stringify(data));
+	localStorage.setItem('todoList', JSON.stringify(data));
 });
 
 // build the dom from data
@@ -37,78 +43,78 @@ render();
 /////// --- functions ----- //////////
 
 function addItem(value) { // the update part of MVU
-  data.todo.push(value);
-  render(); // with a call to the view once it's been updated
+	data.todo.push(value);
+	/* prof said he prefers none of this sort of function "chaining," if you will */
+	//  render(); // with a call to the view once it's been updated
 }
 
-function removeItem(index, completed) { // also part of the update part of MVU
-					// completed is false if item's in todo list
-  					// this way it knows which list to remove from
-  if (completed) data.completed.splice(index, 1);
-  else data.todo.splice(index, 1);
-  render();
+// also part of the update part of MVU
+// completed is false if item's in todo list
+// this way it knows which list to remove from
+function removeItem(index, completed) {
+	if (completed) data.completed.splice(index, 1);
+	else data.todo.splice(index, 1);
+	//render();
 }
 
 function completeItem(index, completed) { // see removeItem() comment
-  var value = data.todo[index];
-
-  if (completed) {
-    data.completed.splice(index, 1);
-    data.todo.push(value);
-  } else {
-    data.todo.splice(index, 1);
-    data.completed.push(value);
-  }
-  render();
+	if (completed) {
+		var value = data.completed[index];
+		data.completed.splice(index, 1);
+		data.todo.push(value);
+	} else {
+		var value = data.todo[index];
+		data.todo.splice(index, 1);
+		data.completed.push(value);
+	}
+	//render();
 }
 
 function render() { // build the elements from the list and insert into dom (view part of MVU)
-  document.getElementById('item').value = '';
-	  // prof. said it's fine if we just rebuild the elements on each change
-	  // you can do it the fancy way if you feel like it though.
-	  // (I know this is inefficient, but it's a todo list app... if you have
-	  // that many todos that this poses a problem, you've got your own problems)
-	  document.getElementById('todo').innerHTML = "";
-	  document.getElementById('completed').innerHTML = "";
+	document.getElementById('item').value = '';
 
-  if (!data.todo.length && !data.completed.length) return;
+	// prof. said it's fine if we just rebuild the elements on each change
+	// you can do it the fancy way if you feel like it though.
+	document.getElementById('todo').innerHTML = "";
+	document.getElementById('completed').innerHTML = "";
 
-  for (var i = 0; i < data.todo.length; i++) {
-    var value = data.todo[i];
-    addItemToDOM(value, false, i);
-  }
+	if (!data.todo.length && !data.completed.length) return;
 
-  for (var j = 0; j < data.completed.length; j++) {
-    var value = data.completed[j];
-    addItemToDOM(value, true, j);
-  }
+	for (let i = 0; i < data.todo.length; i++)
+		addItemToDOM(data.todo[i], false, i);
+
+	for (let j = 0; j < data.completed.length; j++)
+		addItemToDOM(data.completed[j], true, j);
 }
 
 function addItemToDOM(text, completed, index) { // helper function for render()
-  var list = (completed) ? document.getElementById('completed') : document.getElementById('todo');
+	var list = (completed) ? document.getElementById('completed') : document.getElementById('todo');
 
-  var item = document.createElement('li');
-  item.innerText = text;
+	var item = document.createElement('li');
+	item.innerText = text;
+/**** todo: add a title attribute for this <li> containing the date and time this was created ******/
 
-  var buttons = document.createElement('div');
-  buttons.classList.add('buttons');
+	var buttons = document.createElement('div');
+	buttons.classList.add('buttons');
 
-  var remove = document.createElement('button');
-  remove.classList.add('remove');
-  remove.innerHTML = removeSVG;
-  remove.addEventListener('click', function() {
-	  removeItem(index, completed);
-  });
+	var remove = document.createElement('button');
+	remove.classList.add('remove');
+	remove.innerHTML = removeSVG;
+	remove.addEventListener('click', function() {
+		removeItem(index, completed);
+		render();
+	});
 
-  var complete = document.createElement('button');
-  complete.classList.add('complete');
-  complete.innerHTML = completeSVG;
-  complete.addEventListener('click', function() {
-  	completeItem(index, completed);
-  });
+	var complete = document.createElement('button');
+	complete.classList.add('complete');
+	complete.innerHTML = completeSVG;
+	complete.addEventListener('click', function() {
+		completeItem(index, completed);
+		render();
+	});
 
-  buttons.appendChild(remove);
-  buttons.appendChild(complete);
-  item.appendChild(buttons);
-  list.insertBefore(item, list.childNodes[0]);
+	buttons.appendChild(remove);
+	buttons.appendChild(complete);
+	item.appendChild(buttons);
+	list.insertBefore(item, list.childNodes[0]);
 }
